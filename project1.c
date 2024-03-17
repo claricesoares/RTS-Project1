@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <semaphore.h>
 
-#define NUM_TRAINS 6
+#define NUM_TRAINS 15
 
 // Definições das prioridades
 #define ALTA 0
@@ -47,7 +47,7 @@ void *thread_trem(void *arg)
     Trem *trem = (Trem *)arg;
 
     // Simulação da chegada do trem
-    sleep(1);
+    usleep(100);
 
     // Verifica qual fila adicionar o trem e insere
     if (trem->origem == 0)
@@ -84,7 +84,6 @@ void *controlar_saida(void *arg)
             Trem trem_a1 = fila_a1[0];
             Trem trem_b1 = fila_b1[0];
             printf("Trem %d está cruzando de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
-            printf("Trem %d (prioridade %d) está esperando em B1 e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
             usleep(100);
             printf("Trem %d cruzou de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
             a1_index--;
@@ -99,7 +98,6 @@ void *controlar_saida(void *arg)
             Trem trem_a1 = fila_a1[0];
             Trem trem_b1 = fila_b1[0];
             printf("Trem %d está cruzando B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
-            printf("Trem %d (prioridade %d) está esperando em A1 e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
             usleep(100);
             printf("Trem %d cruzou de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
             b1_index--;
@@ -206,7 +204,7 @@ int main()
     for (int i = 0; i < NUM_TRAINS; i++)
         pthread_join(threads_trens[i], NULL);
 
-    sleep(2);
+    sleep(5);
     SAIDA = 1;
     // Espera a thread de controle terminar
     pthread_join(thread_controle, NULL);
