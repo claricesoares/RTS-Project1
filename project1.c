@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <semaphore.h>
 
-#define NUM_TRAINS 10
+#define NUM_TRAINS 6
 
 // Definições das prioridades
 #define ALTA 0
@@ -14,6 +14,9 @@
 // Define as saidas
 #define A2 1
 #define B2 3
+
+//condição de saida do while
+int SAIDA = 0;
 
 // Estrutura para representar um trem
 typedef struct
@@ -35,41 +38,77 @@ sem_t semaforo_a1;
 sem_t semaforo_b1;
 sem_t semaforo_prioridade;
 
+
+
+
 // Função para a thread dos trens
 void *thread_trem(void *arg)
 {
     Trem *trem = (Trem *)arg;
 
     // Simulação da chegada do trem
-    sleep(2);
+    sleep(1);
 
     // Verifica qual fila adicionar o trem e insere
     if (trem->origem == 0)
     {
         sem_wait(&semaforo_a1);
         fila_a1[a1_index++] = *trem;
-        printf("Trem %d chegou em A1 com prioridade %d e vai p/ direção %s\n", trem->id, trem->prioridade, trem->destino == A2 ? "A2" : "B2");
+        printf("Trem %d está se aproximando de A1 com prioridade %d e vai p/ direção %s\n", trem->id, trem->prioridade, trem->destino == A2 ? "A2" : "B2");
+        sem_post(&semaforo_a1);
     }
     else
     {
         sem_wait(&semaforo_b1);
         fila_b1[b1_index++] = *trem;
-        printf("Trem %d chegou em B1 com prioridade %d e vai p/ direção %s\n", trem->id, trem->prioridade, trem->destino == A2 ? "A2" : "B2");
+        printf("Trem %d está se aproximando de B1 com prioridade %d e vai p/ direção %s\n", trem->id, trem->prioridade, trem->destino == A2 ? "A2" : "B2");
+        sem_post(&semaforo_b1);
     }
 
     free(trem);
-    pthread_exit(NULL);
+    // pthread_exit(NULL);
 }
 
 // Função para controlar a saída dos trens
 void *controlar_saida(void *arg)
 {
-    while (1)
+    
+    while (!SAIDA)
     {
         sem_wait(&semaforo_prioridade);
 
+        if (a1_index > 0 && b1_index == 0)
+        {
+            // Obtém o primeiro trem de cada fila
+            sem_wait(&semaforo_a1);
+            Trem trem_a1 = fila_a1[0];
+            Trem trem_b1 = fila_b1[0];
+            printf("Trem %d está cruzando de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+            printf("Trem %d (prioridade %d) está esperando em B1 e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+            usleep(100);
+            printf("Trem %d cruzou de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+            a1_index--;
+            for (int i = 0; i < a1_index; i++)
+                fila_a1[i] = fila_a1[i + 1];
+            sem_post(&semaforo_a1);
+        }
+        else if (a1_index == 0 && b1_index > 0)
+        {
+            // Obtém o primeiro trem de cada fila
+            sem_wait(&semaforo_b1);
+            Trem trem_a1 = fila_a1[0];
+            Trem trem_b1 = fila_b1[0];
+            printf("Trem %d está cruzando B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+            printf("Trem %d (prioridade %d) está esperando em A1 e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+            usleep(100);
+            printf("Trem %d cruzou de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+            b1_index--;
+            for (int i = 0; i < b1_index; i++)
+                fila_b1[i] = fila_b1[i + 1];
+            sem_post(&semaforo_b1);
+        }
         // Verifica se há trens nas filas A1 e B1
-        if (a1_index > 0 && b1_index > 0)
+        else if (a1_index > 0 && b1_index > 0)
         {
             // Obtém o primeiro trem de cada fila
             Trem trem_a1 = fila_a1[0];
@@ -78,9 +117,11 @@ void *controlar_saida(void *arg)
             // Escolhe o trem com a prioridade mais alta
             if (trem_a1.prioridade < trem_b1.prioridade)
             {
-                printf("Trem %d esta saindo de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
-                sleep(2);
-                printf("Trem %d saiu de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+                sem_wait(&semaforo_a1);
+                printf("Trem %d está cruzando de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+                printf("Trem %d (prioridade %d) está esperando em B1 e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+                usleep(100);
+                printf("Trem %d cruzou de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
                 a1_index--;
                 for (int i = 0; i < a1_index; i++)
                     fila_a1[i] = fila_a1[i + 1];
@@ -88,9 +129,11 @@ void *controlar_saida(void *arg)
             }
             else if (trem_b1.prioridade < trem_a1.prioridade)
             {
-                printf("Trem %d esta saindo de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
-                sleep(2);
-                printf("Trem %d saiu de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+                sem_wait(&semaforo_b1);
+                printf("Trem %d está cruzando de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+                printf("Trem %d (prioridade %d) está esperando em A1 e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+                usleep(100);
+                printf("Trem %d cruzou de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
                 b1_index--;
                 for (int i = 0; i < b1_index; i++)
                     fila_b1[i] = fila_b1[i + 1];
@@ -102,9 +145,11 @@ void *controlar_saida(void *arg)
                 if (trem_a1.id < trem_b1.id)
                 {
                     /* code */
-                    printf("Trem %d esta saindo de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
-                    sleep(2);
-                    printf("Trem %d saiu de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+                    sem_wait(&semaforo_a1);
+                    printf("Trem %d está cruzando de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+                    printf("Trem %d (prioridade %d) está esperando em B1 e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+                    usleep(100);
+                    printf("Trem %d cruzou de A1 com prioridade %d e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
                     a1_index--;
                     for (int i = 0; i < a1_index; i++)
                         fila_a1[i] = fila_a1[i + 1];
@@ -112,9 +157,11 @@ void *controlar_saida(void *arg)
                 }
                 else
                 {
-                    printf("Trem %d esta saindo de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
-                    sleep(2);
-                    printf("Trem %d saiu de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+                    sem_wait(&semaforo_b1);
+                    printf("Trem %d está cruzando de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
+                    printf("Trem %d (prioridade %d) está esperando em A1 e vai p/ direção %s\n", trem_a1.id, trem_a1.prioridade, trem_a1.destino == A2 ? "A2" : "B2");
+                    usleep(100);
+                    printf("Trem %d cruzou de B1 com prioridade %d e vai p/ direção %s\n", trem_b1.id, trem_b1.prioridade, trem_b1.destino == A2 ? "A2" : "B2");
                     b1_index--;
                     for (int i = 0; i < b1_index; i++)
                         fila_b1[i] = fila_b1[i + 1];
@@ -122,9 +169,11 @@ void *controlar_saida(void *arg)
                 }
             }
         }
+        
         sem_post(&semaforo_prioridade);
 
-        usleep(rand() % 1000);
+        usleep(rand() % 100);
+       
     }
 }
 
@@ -157,6 +206,11 @@ int main()
     for (int i = 0; i < NUM_TRAINS; i++)
         pthread_join(threads_trens[i], NULL);
 
+    sleep(2);
+    SAIDA = 1;
+    // Espera a thread de controle terminar
+    pthread_join(thread_controle, NULL);
+   
     // Destruir semáforos
     sem_destroy(&semaforo_a1);
     sem_destroy(&semaforo_b1);
