@@ -21,7 +21,7 @@ Trains can approach the crossing from tracks A1 or B1 and proceed to tracks A2 o
 - **Crossing Release**: After crossing, the train releases the crossing to the next train in the queue.
 
 ## Output Example
-
+![Texto alternativo](https://github.com/claricesoares/RTS-Project1/blob/main/exemploSaida.jpeg)
 ## Team
 
 - [Clarice Soares](https://github.com/claricesoares)
