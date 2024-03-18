@@ -23,7 +23,7 @@ Trains can approach the crossing from tracks A1 or B1 and proceed to tracks A2 o
 ## Output Example
 ![Texto alternativo](https://github.com/claricesoares/RTS-Project1/blob/main/exemploSaida.jpeg)
 
-## Explanation of the code
+## Code Explanation
 [Youtube - Train Track Crossing Simulation](https://youtu.be/UT2bSEC5Oa8?si=dylzIIFF3kfX_GBP)
 
 ## Team
